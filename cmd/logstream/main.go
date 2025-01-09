@@ -18,18 +18,18 @@ func main() {
 }
 
 func sseHandler(w http.ResponseWriter, r *http.Request) {
-	rc := http.NewResponseController(w)
 	fmt.Println("new client has connected")
-	fmt.Fprintf(w, "event:userconnect\ndata:%s\n\n", `{"message":"New user has connected"}`)
-	rc.Flush()
 
+	// Set CORS headers before sending anything to client
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
 	// TODO: Configure properly in production
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Type")
 
+	rc := http.NewResponseController(w)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
@@ -39,6 +39,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-clientGone:
 			fmt.Println("client has disconnected")
+			return
 		case <-ticker.C:
 			data := fmt.Sprintf(`{"message": "%s"}`, time.Now().Format("15:04:05"))
 			fmt.Fprintf(w, "event:ticker\ndata:%s\n\n", data)

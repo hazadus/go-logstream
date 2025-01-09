@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Logstream</title>
+    </head>
+    <body>
+        <div id="sse-data"></div>
+
+        <script>
+            <!--  TODO: Implement reconnect -->
+            const eventSource = new EventSource("http://localhost:8080/events");
+            const dataElement = document.getElementById("sse-data");
+            dataElement.innerHTML += "Messages will appear here<br>";
+
+            eventSource.addEventListener("ticker", (event) => {
+                dataElement.innerHTML += event.data + "<br>";
+            });
+
+            eventSource.onerror = (err) => {
+                console.error("EventSource failed:", err);
+            };
+        </script>
+    </body>
+</html>
