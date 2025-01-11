@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	host = "localhost"
 	port = 8000
 )
 
@@ -23,6 +24,7 @@ func main() {
 	log.Printf("Logstream %s, built on %s", version, buildTime)
 	log.Printf("Waiting for connections on port %d\n", port)
 
+	//nolint:all
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 	if err != nil {
 		log.Fatalf("failed to start server: %s", err.Error())

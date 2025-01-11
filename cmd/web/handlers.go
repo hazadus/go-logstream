@@ -21,7 +21,19 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ts.Execute(w, nil)
+	templateData := struct {
+		Version   string
+		BuildTime string
+		Host      string
+		Port      int
+	}{
+		Version:   version,
+		BuildTime: buildTime,
+		Host:      host,
+		Port:      port,
+	}
+
+	err = ts.Execute(w, templateData)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", 500)
@@ -30,7 +42,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sseHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("new client has connected")
+	log.Println("new client has connected")
 
 	// Set CORS headers before sending anything to client
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -50,12 +62,20 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-clientGone:
-			fmt.Println("client has disconnected")
+			log.Println("client has disconnected")
 			return
 		case <-ticker.C:
 			data := fmt.Sprintf(`{"message": "%s"}`, time.Now().Format("15:04:05"))
-			fmt.Fprintf(w, "event:ticker\ndata:%s\n\n", data)
-			rc.Flush()
+			_, err := fmt.Fprintf(w, "event:ticker\ndata:%s\n\n", data)
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+			// Send data to client
+			err = rc.Flush()
+			if err != nil {
+				log.Println(err.Error())
+			}
 		}
 	}
 }

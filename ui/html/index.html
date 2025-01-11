@@ -4,11 +4,14 @@
         <title>Logstream</title>
     </head>
     <body>
+        <div>Version: {{.Version}}, build time: {{.BuildTime}}</div>
         <div id="sse-data"></div>
 
         <script>
             <!--  TODO: Implement reconnect -->
-            const eventSource = new EventSource("http://localhost:8000/events");
+            const eventSource = new EventSource(
+                "http://{{.Host}}:{{.Port}}/events",
+            );
             const dataElement = document.getElementById("sse-data");
             dataElement.innerHTML += "Messages will appear here<br>";
 
