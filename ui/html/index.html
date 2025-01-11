@@ -8,7 +8,7 @@
 
         <script>
             <!--  TODO: Implement reconnect -->
-            const eventSource = new EventSource("http://localhost:8080/events");
+            const eventSource = new EventSource("http://localhost:8000/events");
             const dataElement = document.getElementById("sse-data");
             dataElement.innerHTML += "Messages will appear here<br>";
 

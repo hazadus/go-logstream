@@ -32,7 +32,7 @@ linker_flags = '-s -X main.buildTime=${current_time} -X main.version=${git_descr
 ## build: скомпилировать исполняемый файл
 .PHONY: build
 build:
-	go build -ldflags=${linker_flags} -o ./bin/logstream ./cmd/logstream/
+	go build -ldflags=${linker_flags} -o ./bin/logstream ./cmd/web/
 
 ## run: скомпилировать и запустить исполняемый файл
 .PHONY: run

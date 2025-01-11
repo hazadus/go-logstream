@@ -4,16 +4,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"text/template"
 	"time"
 )
 
-func main() {
-	http.HandleFunc("/events", sseHandler)
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
 
-	fmt.Println("waiting for connections")
-	err := http.ListenAndServe(":8080", nil)
+	ts, err := template.ParseFiles("./ui/html/index.html")
 	if err != nil {
-		log.Fatalf("failed to start server: %s", err.Error())
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", 500)
+		return
+	}
+
+	err = ts.Execute(w, nil)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", 500)
+		return
 	}
 }
 
