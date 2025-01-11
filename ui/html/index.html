@@ -15,7 +15,7 @@
             const dataElement = document.getElementById("sse-data");
             dataElement.innerHTML += "Messages will appear here<br>";
 
-            eventSource.addEventListener("ticker", (event) => {
+            eventSource.addEventListener("log_updated", (event) => {
                 dataElement.innerHTML += event.data + "<br>";
             });
 

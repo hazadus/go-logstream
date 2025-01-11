@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	host = "localhost"
-	port = 8000
+	host            = "localhost"
+	port            = 8000
+	watchedFilePath = "./genlog.log"
 )
 
 // Устанавливается при сборке при помощи параметра
@@ -22,6 +23,7 @@ func main() {
 	mux.HandleFunc("/events", sseHandler)
 
 	log.Printf("Logstream %s, built on %s", version, buildTime)
+	log.Printf("Watching file: %s", watchedFilePath)
 	log.Printf("Waiting for connections on port %d\n", port)
 
 	//nolint:all

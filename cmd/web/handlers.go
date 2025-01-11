@@ -5,7 +5,8 @@ import (
 	"log"
 	"net/http"
 	"text/template"
-	"time"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,19 +55,34 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Type")
 
 	rc := http.NewResponseController(w)
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
 
 	clientGone := r.Context().Done()
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	//nolint:all
+	defer watcher.Close()
+
+	err = watcher.Add(watchedFilePath)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
 
 	for {
 		select {
 		case <-clientGone:
 			log.Println("client has disconnected")
+			err := watcher.Close()
+			if err != nil {
+				log.Println(err.Error())
+			}
 			return
-		case <-ticker.C:
-			data := fmt.Sprintf(`{"message": "%s"}`, time.Now().Format("15:04:05"))
-			_, err := fmt.Fprintf(w, "event:ticker\ndata:%s\n\n", data)
+		case event := <-watcher.Events:
+			_, err := fmt.Fprintf(w, "event:log_updated\ndata:%s\n\n", event)
 			if err != nil {
 				log.Println(err.Error())
 			}
