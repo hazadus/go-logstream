@@ -9,8 +9,9 @@ import (
 )
 
 // watchFile наблюдает за изменениями файла filePath, и отправляет новые данные,
-// записанные в файл, в канал newData.
-func watchFile(filePath string, newData chan<- []byte) {
+// записанные в файл, в канал newData. Прекращает работу при появлении данных в
+// канале done.
+func watchFile(filePath string, newData chan<- []byte, done <-chan struct{}) {
 	file, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		log.Println(err.Error())
@@ -36,7 +37,7 @@ func watchFile(filePath string, newData chan<- []byte) {
 	//nolint:all
 	defer watcher.Close()
 
-	err = watcher.Add(watchedFilePath)
+	err = watcher.Add(filePath)
 	if err != nil {
 		log.Println(err.Error())
 		return
@@ -72,6 +73,9 @@ func watchFile(filePath string, newData chan<- []byte) {
 			readPosition = size
 		case errors := <-watcher.Errors:
 			log.Println(errors)
+		case <-done:
+			log.Printf("goroutine stopped watching %s", filePath)
+			return
 		}
 	}
 }

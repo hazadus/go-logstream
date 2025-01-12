@@ -57,13 +57,19 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	clientGone := r.Context().Done()
 
 	newData := make(chan []byte)
-	go watchFile(watchedFilePath, newData)
+	defer close(newData)
+
+	done := make(chan struct{})
+	defer close(done)
+
+	go watchFile(watchedFilePath, newData, done)
 
 	for {
 		select {
 		case <-clientGone:
 			log.Println("client has disconnected")
-			// TODO: stop watchFile goroutine on disconnect
+			// Tell goroutine to stop:
+			done <- struct{}{}
 			return
 
 		case buf := <-newData:
