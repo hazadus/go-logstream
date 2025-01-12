@@ -7,7 +7,7 @@ import (
 	"text/template"
 )
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func (app application) indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -28,8 +28,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}{
 		Version:   version,
 		BuildTime: buildTime,
-		Host:      host,
-		Port:      port,
+		Host:      app.cfg.host,
+		Port:      app.cfg.port,
 	}
 
 	err = ts.Execute(w, templateData)
@@ -40,7 +40,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func sseHandler(w http.ResponseWriter, r *http.Request) {
+func (app application) sseHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("new client has connected")
 
 	// Set CORS headers before sending anything to client
@@ -62,7 +62,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	done := make(chan struct{})
 	defer close(done)
 
-	go watchFile(watchedFilePath, newData, done)
+	go watchFile(app.cfg.watchFilePath, newData, done)
 
 	for {
 		select {
