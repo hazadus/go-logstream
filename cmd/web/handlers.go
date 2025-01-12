@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"text/template"
 
 	"github.com/fsnotify/fsnotify"
@@ -58,6 +59,24 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 
 	clientGone := r.Context().Done()
 
+	// TODO: refactor - move file watching logic to goroutine
+	file, err := os.Open(watchedFilePath)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	//nolint:all
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	// Set initial read position to the end of file
+	readPosition := stat.Size()
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Println(err.Error())
@@ -76,22 +95,43 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-clientGone:
 			log.Println("client has disconnected")
-			err := watcher.Close()
-			if err != nil {
-				log.Println(err.Error())
-			}
 			return
 		case event := <-watcher.Events:
-			_, err := fmt.Fprintf(w, "event:log_updated\ndata:%s\n\n", event)
+			log.Println(event)
+
+			stat, err := file.Stat()
 			if err != nil {
 				log.Println(err.Error())
+				return
 			}
 
-			// Send data to client
-			err = rc.Flush()
-			if err != nil {
-				log.Println(err.Error())
+			// Only read from file if it's size has increased
+			size := stat.Size()
+			if size > readPosition {
+				// TODO: use smaller buffer, read all data in loop
+				buf := make([]byte, 1024)
+				_, err = file.ReadAt(buf, readPosition)
+				if err != nil && err.Error() != "EOF" {
+					log.Printf("error reading from log file: %s", err.Error())
+					return
+				}
+
+				_, err = fmt.Fprintf(w, "event:log_updated\ndata:%s\n\n", buf)
+				if err != nil {
+					log.Println(err.Error())
+				}
+
+				// Send data to client
+				err = rc.Flush()
+				if err != nil {
+					log.Println(err.Error())
+				}
 			}
+
+			// Again, set initial read position to the end of file
+			readPosition = size
+		case errors := <-watcher.Errors:
+			log.Println(errors)
 		}
 	}
 }
