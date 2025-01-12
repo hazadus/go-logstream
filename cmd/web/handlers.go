@@ -108,8 +108,8 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 			// Only read from file if it's size has increased
 			size := stat.Size()
 			if size > readPosition {
-				// TODO: use smaller buffer, read all data in loop
-				buf := make([]byte, 1024)
+				// Make buffer of size just enough to read all new content
+				buf := make([]byte, size-readPosition)
 				_, err = file.ReadAt(buf, readPosition)
 				if err != nil && err.Error() != "EOF" {
 					log.Printf("error reading from log file: %s", err.Error())
